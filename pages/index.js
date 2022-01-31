@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import Slider from './components/Slider';
+import Slider from '../components/Slider';
 import PowerIcon from '../public/svgs/power.svg';
 export default function Home() {
   const [value, setValue] = useState(50);
