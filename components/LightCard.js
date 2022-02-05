@@ -2,19 +2,29 @@ import React, { useState, useEffect } from 'react';
 import PowerIcon from '../public/svgs/power.svg';
 import Slider from '../components/Slider';
 
-const LightCard = ({ device }) => {
+const LightCard = ({ device, socket }) => {
   const [ownDevice, setOwnDevice] = useState(null);
   const [brightness, setBrightness] = useState(0);
   const [onOff, setOnOff] = useState(false);
 
   useEffect(() => {
     setOwnDevice(device);
+
+    const handleDeviceUpdate = (newDevice) => {
+      setOwnDevice(newDevice);
+    };
+    socket.on('updatedDevice', (device) => {
+      handleDeviceUpdate(device);
+    });
+
+    return () => {
+      socket.off('updatedDevice', handleDeviceUpdate);
+    };
   }, []);
 
   useEffect(() => {
     setBrightness(ownDevice ? ownDevice.dimmer : 0);
     setOnOff(ownDevice ? ownDevice.onOff : false);
-    console.log(ownDevice);
   }, [ownDevice]);
 
   const handleChange = (value) => {
@@ -22,16 +32,9 @@ const LightCard = ({ device }) => {
   };
 
   const handleClick = async () => {
-    await fetch('/api/devices', {
-      method: 'POST',
-      body: JSON.stringify({ id: device.id }),
-      headers: {
-        'Content-Type': 'application/json'
-      }
+    socket.emit('toggleDevice', { id: device.id }, (message) => {
+      console.log(message);
     });
-    const response = await fetch('/api/devices');
-    const devices = await response.json();
-    console.log(devices);
   };
 
   return (
