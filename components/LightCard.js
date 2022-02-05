@@ -1,18 +1,27 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import PowerIcon from '../public/svgs/power.svg';
 import Slider from '../components/Slider';
 
 const LightCard = ({ device, socket }) => {
-  const [ownDevice, setOwnDevice] = useState(null);
   const [brightness, setBrightness] = useState(0);
   const [onOff, setOnOff] = useState(false);
 
   useEffect(() => {
-    setOwnDevice(device);
+    device.onOff ? setBrightness(device.dimmer) : setBrightness(0);
+    setOnOff(device.onOff);
+  }, [device]);
 
-    const handleDeviceUpdate = (newDevice) => {
-      setOwnDevice(newDevice);
+  useEffect(() => {
+    const handleDeviceUpdate = (updatedDevice) => {
+      if (updatedDevice.id === device.id) {
+        console.log(updatedDevice);
+        setOnOff(updatedDevice.onOff);
+        updatedDevice.onOff
+          ? setBrightness(updatedDevice.dimmer)
+          : setBrightness(0);
+      }
     };
+
     socket.on('updatedDevice', (device) => {
       handleDeviceUpdate(device);
     });
@@ -22,13 +31,11 @@ const LightCard = ({ device, socket }) => {
     };
   }, []);
 
-  useEffect(() => {
-    setBrightness(ownDevice ? ownDevice.dimmer : 0);
-    setOnOff(ownDevice ? ownDevice.onOff : false);
-  }, [ownDevice]);
-
   const handleChange = (value) => {
     setBrightness(value);
+    // socket.emit('setBrightness', { id: device.id, brightness }, (message) => {
+    //   console.log(message);
+    // });
   };
 
   const handleClick = async () => {
