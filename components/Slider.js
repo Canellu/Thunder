@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 
-const Slider = ({ value, onChange, className, trackColor }) => {
+const Slider = ({ value, onChange, className, trackColor, onRelease }) => {
   const [trackPercentage, setTrackPercentage] = useState(0);
 
   const handleChange = (value) => {
@@ -38,6 +38,8 @@ const Slider = ({ value, onChange, className, trackColor }) => {
         max='100'
         value={value}
         onChange={(e) => handleChange(e.target.value)}
+        onMouseUp={(e) => onRelease(e.target.value)}
+        onTouchEnd={(e) => onRelease(e.target.value)}
       />
     </div>
   );

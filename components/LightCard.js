@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import PowerIcon from '../public/svgs/power.svg';
 import Slider from '../components/Slider';
 
@@ -7,35 +7,31 @@ const LightCard = ({ device, socket }) => {
   const [onOff, setOnOff] = useState(false);
 
   useEffect(() => {
-    device.onOff ? setBrightness(device.dimmer) : setBrightness(0);
+    device.onOff ? setBrightness(Math.round(device.dimmer)) : setBrightness(0);
     setOnOff(device.onOff);
   }, [device]);
 
-  useEffect(() => {
-    const handleDeviceUpdate = (updatedDevice) => {
-      if (updatedDevice.id === device.id) {
-        console.log(updatedDevice);
-        setOnOff(updatedDevice.onOff);
-        updatedDevice.onOff
-          ? setBrightness(updatedDevice.dimmer)
-          : setBrightness(0);
-      }
-    };
+  // useEffect(() => {
+  //   if (device.id === 65559)
+  //     console.log(
+  //       `Brightness: %c${brightness}`,
+  //       'color: red; font-size: 16px; font-weight: bold;'
+  //     );
+  // }, [brightness]);
 
-    socket.on('updatedDevice', (device) => {
-      handleDeviceUpdate(device);
-    });
-
-    return () => {
-      socket.off('updatedDevice', handleDeviceUpdate);
-    };
-  }, []);
-
+  //TODO: handle Brightness
   const handleChange = (value) => {
     setBrightness(value);
-    // socket.emit('setBrightness', { id: device.id, brightness }, (message) => {
-    //   console.log(message);
-    // });
+  };
+
+  const handleRelease = (value) => {
+    socket.emit(
+      'setBrightness',
+      { id: device.id, brightness: value },
+      (message) => {
+        console.log(message);
+      }
+    );
   };
 
   const handleClick = async () => {
@@ -43,6 +39,27 @@ const LightCard = ({ device, socket }) => {
       console.log(message);
     });
   };
+
+  //TODO: make brightness not trigger all 3 times when changed from ThunderApp
+
+  const handleDeviceUpdate = (updatedDevice) => {
+    if (updatedDevice.id === device.id) {
+      setOnOff(updatedDevice.onOff);
+      updatedDevice.onOff
+        ? setBrightness(Math.round(updatedDevice.dimmer).toString())
+        : setBrightness(0);
+    }
+  };
+
+  useEffect(() => {
+    socket.on('updatedDevice', (device) => {
+      handleDeviceUpdate(device);
+    });
+
+    return () => {
+      socket.off('updatedDevice');
+    };
+  }, []);
 
   return (
     <div className='relative select-none'>
@@ -84,6 +101,7 @@ const LightCard = ({ device, socket }) => {
           trackColor={`#${device?.color}`}
           value={brightness}
           onChange={handleChange}
+          onRelease={handleRelease}
         />
       </div>
     </div>

@@ -6,12 +6,16 @@ export default function Home() {
   const [devices, setDevices] = useState([]);
   const [socket, setSocket] = useState(null);
   useEffect(async () => {
+    console.log('Creating socket...');
     const newSocket = io('http://localhost:3001');
     setSocket(newSocket);
+    newSocket.on('connect', () => {
+      console.log(newSocket.id);
+    });
+
     newSocket.on('newDevice', (device) => {
       setDevices((prev) => [...prev, device]);
     });
-    console.log('Creating socket');
 
     return () => {
       newSocket.close();
