@@ -2,37 +2,64 @@ import React, { useState, useEffect } from 'react';
 import PowerIcon from '../public/svgs/power.svg';
 import Slider from '../components/Slider';
 
-const LightCard = ({ device }) => {
-  const [ownDevice, setOwnDevice] = useState(null);
+const LightCard = ({ device, socket }) => {
   const [brightness, setBrightness] = useState(0);
   const [onOff, setOnOff] = useState(false);
 
   useEffect(() => {
-    setOwnDevice(device);
-  }, []);
+    device.onOff ? setBrightness(Math.round(device.dimmer)) : setBrightness(0);
+    setOnOff(device.onOff);
+  }, [device]);
 
-  useEffect(() => {
-    setBrightness(ownDevice ? ownDevice.dimmer : 0);
-    setOnOff(ownDevice ? ownDevice.onOff : false);
-    console.log(ownDevice);
-  }, [ownDevice]);
+  // useEffect(() => {
+  //   if (device.id === 65559)
+  //     console.log(
+  //       `Brightness: %c${brightness}`,
+  //       'color: red; font-size: 16px; font-weight: bold;'
+  //     );
+  // }, [brightness]);
 
+  //TODO: handle Brightness
   const handleChange = (value) => {
     setBrightness(value);
   };
 
-  const handleClick = async () => {
-    await fetch('/api/devices', {
-      method: 'POST',
-      body: JSON.stringify({ id: device.id }),
-      headers: {
-        'Content-Type': 'application/json'
+  const handleRelease = (value) => {
+    socket.emit(
+      'setBrightness',
+      { id: device.id, brightness: value },
+      (message) => {
+        console.log(message);
       }
-    });
-    const response = await fetch('/api/devices');
-    const devices = await response.json();
-    console.log(devices);
+    );
   };
+
+  const handleClick = async () => {
+    socket.emit('toggleDevice', { id: device.id }, (message) => {
+      console.log(message);
+    });
+  };
+
+  //TODO: make brightness not trigger all 3 times when changed from ThunderApp
+
+  const handleDeviceUpdate = (updatedDevice) => {
+    if (updatedDevice.id === device.id) {
+      setOnOff(updatedDevice.onOff);
+      updatedDevice.onOff
+        ? setBrightness(Math.round(updatedDevice.dimmer).toString())
+        : setBrightness(0);
+    }
+  };
+
+  useEffect(() => {
+    socket.on('updatedDevice', (device) => {
+      handleDeviceUpdate(device);
+    });
+
+    return () => {
+      socket.off('updatedDevice');
+    };
+  }, []);
 
   return (
     <div className='relative select-none'>
@@ -74,6 +101,7 @@ const LightCard = ({ device }) => {
           trackColor={`#${device?.color}`}
           value={brightness}
           onChange={handleChange}
+          onRelease={handleRelease}
         />
       </div>
     </div>

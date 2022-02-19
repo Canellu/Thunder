@@ -2,10 +2,12 @@ const Conf = require('conf');
 const delay = require('delay');
 const NodeTradfriClient = require('node-tradfri-client');
 const conf = new Conf();
+const dotenv = require('dotenv');
+dotenv.config();
 const { discoverGateway, TradfriClient } = NodeTradfriClient;
 
 async function getConnection() {
-  console.log('Looking up IKEA Tradfri gateway on your network');
+  console.log('Looking for Tradfri gateway...');
   let gateway = await discoverGateway();
 
   if (gateway == null) {
@@ -13,7 +15,6 @@ async function getConnection() {
     process.exit(1);
   }
 
-  console.log('Connecting to', gateway.host);
   const tradfri = new TradfriClient(gateway.host);
 
   if (!conf.has('security.identity') || !conf.has('security.psk')) {
@@ -26,12 +27,33 @@ async function getConnection() {
     }
 
     console.log('Getting identity from security code');
-    const { identity, psk } = await tradfri.authenticate(securityCode);
-
-    conf.set('security', { identity, psk });
+    try {
+      const { identity, psk } = await tradfri.authenticate(securityCode);
+      conf.set('security', { identity, psk });
+    } catch (e) {
+      if (e instanceof TradfriError) {
+        switch (e.code) {
+          case TradfriErrorCodes.ConnectionTimedOut: {
+            console.error(
+              'The gateway is unreachable or did not respond in time'
+            );
+          }
+          case TradfriErrorCodes.AuthenticationFailed: {
+            console.error(
+              'The security code is wrong or something else went wrong with the authentication.'
+            );
+            // Check the error message for details. It might be that this library has to be updated
+            // to be compatible with a new firmware.
+          }
+          case TradfriErrorCodes.ConnectionFailed: {
+            console.error('An unknown error happened while trying to connect');
+          }
+        }
+      }
+    }
   }
 
-  console.log('Securely connecting to gateway');
+  console.log('%s\x1b[36m%s\x1b[0m', 'Connecting to gateway: ', gateway.name);
 
   await tradfri.connect(
     conf.get('security.identity'),
