@@ -5,4 +5,5 @@
 - create a `.env` file in folder `./Server` and add this line
  `IKEASECURITY=yoursecuritycode` (the security code is found underneath the
   IKEA Gateway)
+- run `npm install -g concurrently`
 - start application with `npm run app` then go to browser at `localhost:3000`
